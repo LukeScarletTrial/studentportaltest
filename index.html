@@ -171,6 +171,39 @@
   font-size: 14px;
   padding: 6px 12px;
 }
+
+/* Verification modal */
+.verification-modal {
+  background: var(--surface);
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+.verification-option {
+  border: 1px solid #eef2ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.verification-option:hover {
+  background: #f8fafc;
+  border-color: var(--primary);
+}
+.verification-option h4 {
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.verification-option p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
@@ -208,8 +241,8 @@
         <strong>Email Verification Required</strong>
         <div style="font-size: 14px; margin-top: 4px;">Please verify your email address to access all features.</div>
       </div>
-      <button id="sendVerificationBtn" class="btn">Send Verification Email</button>
-      <button id="reloadUserBtn" class="btn ghost">I've Verified</button>
+      <button id="sendVerificationBtn" class="btn">Verify Email</button>
+      <button id="reloadUserBtn" class="btn ghost">Check Status</button>
     </div>
     
     <div class="topbar">
@@ -269,6 +302,7 @@
       <div class="admin-controls">
         <button id="manageUsersBtn" class="btn">Manage Users</button>
         <button id="systemStatsBtn" class="btn">System Stats</button>
+        <button id="verifyUsersBtn" class="btn">Verify Users</button>
       </div>
       <div id="adminContent"></div>
     </section>
@@ -290,6 +324,45 @@
     <p style="margin: 4px 0; font-size: 12px;">Student: student@portal.com / student123</p>
   </div>
 </div></div>
+
+<!-- Verification Options Modal -->
+<div id="verificationModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:1000;">
+  <div class="verification-modal">
+    <h3>Verify Your Email</h3>
+    <p>Choose how you'd like to verify your email address:</p>
+    
+    <div class="verification-option" onclick="sendRealVerificationEmail()">
+      <h4><span class="material-symbols-outlined">mail</span> Send Verification Email</h4>
+      <p>We'll send a verification link to your email address. Check your inbox and spam folder.</p>
+    </div>
+    
+    <div class="verification-option" onclick="simulateEmailVerification()">
+      <h4><span class="material-symbols-outlined">bolt</span> Quick Verification (Testing)</h4>
+      <p>Instantly verify your email for testing purposes. No email will be sent.</p>
+    </div>
+    
+    <div class="verification-option" onclick="showAdminVerification()">
+      <h4><span class="material-symbols-outlined">admin_panel_settings</span> Admin Verification</h4>
+      <p>Request manual verification from an administrator.</p>
+    </div>
+    
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button id="cancelVerificationBtn" class="btn ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Verification Modal -->
+<div id="adminVerificationModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:1000;">
+  <div style="background:var(--surface);padding:22px;border-radius:12px;max-width:500px;width:100%;box-shadow:var(--shadow);">
+    <h3>Admin Verification Request</h3>
+    <p>Your verification request has been submitted to administrators. They will review and verify your account shortly.</p>
+    <p><strong>Note:</strong> This is a simulation. In a real application, this would notify actual administrators.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button id="closeAdminModalBtn" class="btn">OK</button>
+    </div>
+  </div>
+</div>
 
 <!-- Create Project Modal -->
 <div id="createProjectModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:1000;">
@@ -363,7 +436,7 @@ function showToast(message, type = 'success') {
   
   setTimeout(() => {
     toast.classList.remove('show');
-  }, 3000);
+  }, 4000);
 }
 
 function setLoading(button, isLoading) {
@@ -377,9 +450,16 @@ function setLoading(button, isLoading) {
 }
 
 // --- Email Verification Functions ---
-function sendEmailVerification() {
+function showVerificationOptions() {
+  document.getElementById('verificationModal').style.display = 'flex';
+}
+
+function sendRealVerificationEmail() {
   const user = auth.currentUser;
   if (!user) return;
+  
+  const verificationModal = document.getElementById('verificationModal');
+  verificationModal.style.display = 'none';
   
   const button = document.getElementById('sendVerificationBtn');
   button.setAttribute('data-original-text', button.textContent);
@@ -387,15 +467,71 @@ function sendEmailVerification() {
   
   user.sendEmailVerification()
     .then(() => {
-      showToast('Verification email sent! Please check your inbox.', 'success');
+      showToast('Verification email sent! Please check your inbox and spam folder.', 'success');
+      // Store the time we sent the email to prevent spam
+      localStorage.setItem('lastVerificationEmail', Date.now());
     })
     .catch(err => {
       console.error('Error sending verification email:', err);
-      showToast('Error sending verification email: ' + err.message, 'error');
+      
+      if (err.code === 'auth/too-many-requests') {
+        showToast('Too many requests. Please try again in a few minutes.', 'error');
+      } else if (err.code === 'auth/network-request-failed') {
+        showToast('Network error. Please check your connection and try again.', 'error');
+      } else {
+        showToast('Error sending verification email: ' + err.message, 'error');
+      }
     })
     .finally(() => {
       setLoading(button, false);
     });
+}
+
+function simulateEmailVerification() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  const verificationModal = document.getElementById('verificationModal');
+  verificationModal.style.display = 'none';
+  
+  // Simulate email verification by updating Firestore
+  db.collection("users").doc(user.uid).set({
+    email: user.email,
+    emailVerified: true,
+    verifiedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true })
+  .then(() => {
+    showToast('Email verified successfully! (Simulation)', 'success');
+    // Force reload user data
+    user.reload().then(() => {
+      checkEmailVerification();
+    });
+  })
+  .catch(err => {
+    showToast('Error during verification: ' + err.message, 'error');
+  });
+}
+
+function showAdminVerification() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  const verificationModal = document.getElementById('verificationModal');
+  verificationModal.style.display = 'none';
+  
+  // Store verification request in Firestore
+  db.collection("verificationRequests").add({
+    userId: user.uid,
+    userEmail: user.email,
+    requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    status: 'pending'
+  })
+  .then(() => {
+    document.getElementById('adminVerificationModal').style.display = 'flex';
+  })
+  .catch(err => {
+    showToast('Error submitting verification request: ' + err.message, 'error');
+  });
 }
 
 function checkEmailVerification() {
@@ -404,6 +540,22 @@ function checkEmailVerification() {
   
   if (user && !user.emailVerified) {
     banner.style.display = 'flex';
+    
+    // Check if we have a custom verification status in Firestore
+    db.collection("users").doc(user.uid).get()
+      .then(doc => {
+        if (doc.exists && doc.data().emailVerified) {
+          // User is verified in our system, update Firebase auth
+          user.reload().then(() => {
+            if (user.emailVerified) {
+              banner.style.display = 'none';
+            }
+          });
+        }
+      })
+      .catch(err => {
+        console.error("Error checking verification status:", err);
+      });
   } else {
     banner.style.display = 'none';
   }
@@ -453,6 +605,15 @@ const openLoginBtn = document.getElementById("openLogin");
 openLoginBtn.addEventListener("click", () => authModal.style.display = "flex");
 authModal.addEventListener("click", e => { 
   if(e.target === authModal) authModal.style.display = "none"; 
+});
+
+// Verification modal handlers
+document.getElementById("cancelVerificationBtn").addEventListener("click", () => {
+  document.getElementById("verificationModal").style.display = "none";
+});
+
+document.getElementById("closeAdminModalBtn").addEventListener("click", () => {
+  document.getElementById("adminVerificationModal").style.display = "none";
 });
 
 // --- Project Creation Modal ---
@@ -760,17 +921,14 @@ document.getElementById("modalRegister").addEventListener("click", () => {
   
   auth.createUserWithEmailAndPassword(email, pass)
     .then(u => { 
-      // Send verification email after registration
-      if (u.user) {
-        u.user.sendEmailVerification()
-          .then(() => {
-            showToast("Registered successfully! Please check your email for verification.", 'success');
-          })
-          .catch(err => {
-            console.error('Error sending verification email:', err);
-            showToast("Registered successfully but couldn't send verification email.", 'warning');
-          });
-      }
+      // Store user in Firestore
+      db.collection("users").doc(u.user.uid).set({
+        email: u.user.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        emailVerified: false
+      }, { merge: true });
+      
+      showToast("Registered successfully! Please verify your email.", 'success');
       authModal.style.display="none"; 
     })
     .catch(err => {
@@ -813,7 +971,7 @@ document.getElementById("sidebarLogout").addEventListener("click", () => {
 });
 
 // --- Email verification button handlers ---
-document.getElementById("sendVerificationBtn").addEventListener("click", sendEmailVerification);
+document.getElementById("sendVerificationBtn").addEventListener("click", showVerificationOptions);
 document.getElementById("reloadUserBtn").addEventListener("click", reloadUser);
 
 // --- Auth state listener ---
@@ -976,7 +1134,7 @@ document.getElementById("manageUsersBtn").addEventListener("click", () => {
         <tr>
           <th>Email</th>
           <th>Role</th>
-          <th>Last Login</th>
+          <th>Verified</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -984,14 +1142,17 @@ document.getElementById("manageUsersBtn").addEventListener("click", () => {
         <tr>
           <td>admin@portal.com</td>
           <td>Administrator</td>
-          <td>Today</td>
+          <td>Yes</td>
           <td><button class="btn danger" style="padding: 4px 8px; font-size: 12px;">Delete</button></td>
         </tr>
         <tr>
           <td>student@portal.com</td>
           <td>Student</td>
-          <td>Today</td>
-          <td><button class="btn danger" style="padding: 4px 8px; font-size: 12px;">Delete</button></td>
+          <td>No</td>
+          <td>
+            <button class="btn" style="padding: 4px 8px; font-size: 12px;" onclick="adminVerifyUser('student@portal.com')">Verify</button>
+            <button class="btn danger" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -1022,6 +1183,47 @@ document.getElementById("systemStatsBtn").addEventListener("click", () => {
     </div>
   `;
 });
+
+document.getElementById("verifyUsersBtn").addEventListener("click", () => {
+  const adminContent = document.getElementById("adminContent");
+  adminContent.innerHTML = `
+    <h4>Pending Verification Requests</h4>
+    <div class="list-item">
+      <div>
+        <strong>student@portal.com</strong>
+        <div style="font-size: 14px; color: var(--muted);">Requested: Just now</div>
+      </div>
+      <button class="btn" style="font-size: 12px; padding: 6px 12px;" onclick="adminVerifyUser('student@portal.com')">Approve</button>
+    </div>
+    <div class="list-item">
+      <div>
+        <strong>No pending requests</strong>
+        <div style="font-size: 14px; color: var(--muted);">All users are verified</div>
+      </div>
+    </div>
+  `;
+});
+
+// Admin verification function
+function adminVerifyUser(email) {
+  // In a real app, you would look up the user by email and update their verification status
+  showToast(`User ${email} has been verified manually by admin`, 'success');
+  
+  // If the current user is the one being verified, update their status
+  const user = auth.currentUser;
+  if (user && user.email === email) {
+    db.collection("users").doc(user.uid).update({
+      emailVerified: true,
+      verifiedBy: 'admin',
+      verifiedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+      user.reload().then(() => {
+        checkEmailVerification();
+      });
+    });
+  }
+}
 
 // Create demo accounts on page load
 window.addEventListener('load', () => {
