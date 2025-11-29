@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Portal — Classroom UI</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+<style>
+/* --- KEEP ALL UI STYLES INTACT --- */
+:root{--bg:#f5f7fa;--surface:#fff;--muted:#6b7280;--primary:#1a73e8;--accent:#f59e0b;--danger:#e04848;--shadow:0 6px 18px rgba(19,24,31,0.06);--radius:12px;--maxWidth:1200px;--gap:16px;font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;}
+*{box-sizing:border-box} body{margin:0;padding:24px;background:var(--bg);font-family:var(--font);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:flex;justify-content:center;} 
+.app{display:grid;grid-template-columns:260px 1fr;gap:var(--gap);width:100%;max-width:var(--maxWidth);align-items:start;}
+.sidebar{background:var(--surface);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:sticky;top:24px;height:calc(100vh - 48px);overflow:auto;}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,var(--primary),#6b8af6);border-radius:10px;color:white;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.brand .title{font-weight:600;font-size:16px;}
+.brand .sub{font-size:12px;color:var(--muted);}
+.sidebar-nav{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;font-weight:500;color:#0f172a;cursor:pointer;}
+.nav-item:hover{background:#f3f6ff}
+.nav-item.active{background:linear-gradient(90deg, rgba(26,115,232,0.08), rgba(26,115,232,0.04));border-left:4px solid var(--primary);padding-left:8px;}
+.icon{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;font-size:20px;color:var(--primary);}
+.profile-card{margin-top:16px;padding:12px;border-radius:10px;background:linear-gradient(90deg,#f8fafc,#fff);border:1px solid #eef2ff;}
+.profile-name{font-weight:600;}
+.profile-role{font-size:12px;color:var(--muted);}
+.sidebar button{width:100%;}
+.main{display:flex;flex-direction:column;gap:var(--gap);}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 0;}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow);min-width:420px;max-width:640px;}
+.search input{border:0;outline:0;background:transparent;width:100%;font-size:14px;}
+.top-actions{display:flex;gap:10px;align-items:center;}
+.card{background:var(--surface);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;border:1px solid #f1f5f9;margin-bottom:8px;background:#fff;}
+.chat-area{display:flex;flex-direction:column;gap:12px;}
+.chat-window{height:300px;border-radius:10px;border:1px solid #eef2ff;padding:12px;overflow:auto;background:#f8fbff;}
+.message{padding:10px;border-radius:8px;background:#eef6ff;margin-bottom:8px;}
+.message .meta{font-size:12px;color:var(--muted);margin-bottom:6px;}
+.chat-input{display:flex;gap:10px;align-items:center;}
+.chat-input input{flex:1;padding:12px;border-radius:10px;border:1px solid #eef2ff;background:#ffffff;}
+.btn{padding:10px 12px;border-radius:10px;border:0;background:var(--primary);color:white;cursor:pointer;font-weight:600;}
+.btn.ghost{background:transparent;border:1px solid #e6eefc;color:var(--primary);}
+.btn.danger{background:var(--danger);}
+#authModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:1000;}
+#authModal>div{background:var(--surface);padding:22px;border-radius:12px;max-width:520px;width:100%;box-shadow:var(--shadow);}
+@media(max-width:980px){.app{grid-template-columns:1fr;padding-bottom:160px}.sidebar{position:relative;height:auto}.search{min-width:unset;width:100%}.chat-window{height:200px}}
+
+/* Additional styles for improved UI */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  z-index: 1001;
+  transform: translateX(150%);
+  transition: transform 0.3s ease;
+}
+.toast.show {
+  transform: translateX(0);
+}
+.toast.success {
+  border-left: 4px solid #10b981;
+}
+.toast.error {
+  border-left: 4px solid var(--danger);
+}
+.toast.warning {
+  border-left: 4px solid var(--accent);
+}
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Profile styles */
+.profile-pic {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary);
+  margin-bottom: 16px;
+}
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 500px;
+}
+.profile-form textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #eef2ff;
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+.file-input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px dashed #eef2ff;
+}
+
+/* Admin styles */
+.admin-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+.admin-table th, .admin-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+.admin-table th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+/* Create forms */
+.create-form {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.create-form input, .create-form textarea, .create-form select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #eef2ff;
+  font-family: inherit;
+}
+
+/* Email verification banner */
+.verification-banner {
+  background: linear-gradient(90deg, #fef3c7, #fef7cd);
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.verification-banner .material-symbols-outlined {
+  color: #d97706;
+}
+.verification-banner button {
+  margin-left: auto;
+  font-size: 14px;
+  padding: 6px 12px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">SP</div><div><div class="title">Student Portal</div><div class="sub">Classroom UI</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-tab="dashboard"><span class="material-symbols-outlined icon">home</span>Dashboard</div>
+      <div class="nav-item" data-tab="projects"><span class="material-symbols-outlined icon">work</span>Projects</div>
+      <div class="nav-item" data-tab="assignments"><span class="material-symbols-outlined icon">assignment</span>Assignments</div>
+      <div class="nav-item" data-tab="events"><span class="material-symbols-outlined icon">event</span>Events</div>
+      <div class="nav-item" data-tab="conversations"><span class="material-symbols-outlined icon">chat_bubble</span>Conversations</div>
+      <div class="nav-item" data-tab="clubs"><span class="material-symbols-outlined icon">account_balance</span>Study Groups</div>
+      <div class="nav-item" data-tab="reports"><span class="material-symbols-outlined icon">report</span>Reports</div>
+      <div class="nav-item" data-tab="profile"><span class="material-symbols-outlined icon">person</span>Profile</div>
+      <div id="adminNav" class="nav-item" data-tab="admin" style="display:none"><span class="material-symbols-outlined icon">admin_panel_settings</span>Admin Panel</div>
+    </nav>
+    <div class="profile-card">
+      <div class="profile-name" id="sideName">Guest</div>
+      <div class="profile-role" id="sideRole">Not signed in</div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button id="sidebarLogout" class="btn ghost" style="flex:1; display:none">Logout</button>
+      <button id="openLogin" class="btn" style="flex:1">Login</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <!-- Email verification banner -->
+    <div id="emailVerificationBanner" class="verification-banner" style="display:none">
+      <span class="material-symbols-outlined">warning</span>
+      <div>
+        <strong>Email Verification Required</strong>
+        <div style="font-size: 14px; margin-top: 4px;">Please verify your email address to access all features.</div>
+      </div>
+      <button id="sendVerificationBtn" class="btn">Send Verification Email</button>
+      <button id="reloadUserBtn" class="btn ghost">I've Verified</button>
+    </div>
+    
+    <div class="topbar">
+      <div class="search"><span class="material-symbols-outlined" style="color:var(--muted)">search</span><input id="globalSearch" placeholder="Search projects, groups, assignments..."></div>
+      <div class="top-actions"><div style="text-align:right"><div id="welcomeText" style="font-weight:600">Welcome</div><div class="small-muted" id="welcomeSub">Please sign in</div></div></div>
+    </div>
+
+    <!-- Sections -->
+    <section id="dashboard" class="card"><h3>Dashboard</h3><p>Welcome to your student dashboard. Select a section from the sidebar to get started.</p></section>
+    
+    <section id="projects" class="card" style="display:none">
+      <div class="section-title">
+        <h3>Projects</h3>
+        <button id="createProjectBtn" class="btn">Create Project</button>
+      </div>
+      <div id="projectsList"></div>
+    </section>
+    
+    <section id="assignments" class="card" style="display:none"><h3>Assignments</h3><div id="assignmentsList"></div></section>
+    <section id="events" class="card" style="display:none"><h3>Events</h3><div id="eventsList"></div></section>
+    
+    <section id="conversations" class="card" style="display:none">
+      <h3>Conversations</h3>
+      <div class="chat-area">
+        <select id="convList"></select>
+        <div class="chat-window" id="chatWindow"></div>
+        <div class="chat-input">
+          <input id="chatInput" placeholder="Type your message...">
+          <button class="btn" id="sendBtn">Send</button>
+        </div>
+      </div>
+    </section>
+    
+    <section id="clubs" class="card" style="display:none">
+      <div class="section-title">
+        <h3>Study Groups</h3>
+        <button id="createGroupBtn" class="btn">Create Group</button>
+      </div>
+      <div id="clubsList"></div>
+    </section>
+    
+    <section id="reports" class="card" style="display:none"><h3>Reports</h3><div id="reportsList"></div></section>
+    
+    <section id="profile" class="card" style="display:none">
+      <h3>Profile</h3>
+      <div class="profile-form">
+        <img id="profilePic" src="https://via.placeholder.com/100" class="profile-pic" alt="Profile Picture">
+        <input type="file" id="profilePicInput" class="file-input" accept="image/*">
+        <input type="text" id="profileName" placeholder="Your Name">
+        <textarea id="profileBio" placeholder="Write something about yourself..."></textarea>
+        <button id="saveProfileBtn" class="btn">Save Profile</button>
+      </div>
+    </section>
+    
+    <section id="admin" class="card" style="display:none">
+      <h3>Admin Panel</h3>
+      <div class="admin-controls">
+        <button id="manageUsersBtn" class="btn">Manage Users</button>
+        <button id="systemStatsBtn" class="btn">System Stats</button>
+      </div>
+      <div id="adminContent"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Auth Modal -->
+<div id="authModal"><div>
+  <h3>Sign in / Register</h3>
+  <input id="modalEmail" placeholder="Email" style="width:100%;padding:8px;margin:4px 0">
+  <input id="modalPass" type="password" placeholder="Password" style="width:100%;padding:8px;margin:4px 0">
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+    <button id="modalRegister" class="btn ghost">Register</button>
+    <button id="modalLogin" class="btn">Login</button>
+  </div>
+  <div style="margin-top: 16px; padding: 12px; background: #f0f7ff; border-radius: 8px;">
+    <p style="margin: 0; font-size: 14px;"><strong>Demo Accounts:</strong></p>
+    <p style="margin: 4px 0; font-size: 12px;">Admin: admin@portal.com / admin123</p>
+    <p style="margin: 4px 0; font-size: 12px;">Student: student@portal.com / student123</p>
+  </div>
+</div></div>
+
+<!-- Create Project Modal -->
+<div id="createProjectModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:1000;">
+  <div style="background:var(--surface);padding:22px;border-radius:12px;max-width:520px;width:100%;box-shadow:var(--shadow);">
+    <h3>Create New Project</h3>
+    <input id="projectTitle" placeholder="Project Title" style="width:100%;padding:8px;margin:4px 0">
+    <textarea id="projectDescription" placeholder="Project Description" style="width:100%;padding:8px;margin:4px 0; min-height:100px"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button id="cancelProjectBtn" class="btn ghost">Cancel</button>
+      <button id="saveProjectBtn" class="btn">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Group Modal -->
+<div id="createGroupModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:1000;">
+  <div style="background:var(--surface);padding:22px;border-radius:12px;max-width:520px;width:100%;box-shadow:var(--shadow);">
+    <h3>Create Study Group</h3>
+    <input id="groupName" placeholder="Group Name" style="width:100%;padding:8px;margin:4px 0">
+    <textarea id="groupDescription" placeholder="Group Description" style="width:100%;padding:8px;margin:4px 0; min-height:100px"></textarea>
+    <select id="groupSubject" style="width:100%;padding:8px;margin:4px 0">
+      <option value="">Select Subject</option>
+      <option value="math">Mathematics</option>
+      <option value="science">Science</option>
+      <option value="history">History</option>
+      <option value="english">English</option>
+      <option value="programming">Programming</option>
+    </select>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button id="cancelGroupBtn" class="btn ghost">Cancel</button>
+      <button id="saveGroupBtn" class="btn">Create Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+<script>
+// --- Firebase config ---
+const firebaseConfig = {
+  apiKey: "AIzaSyApBvfatNOG71P8SUB_uYT08zGeOmC8VlY",
+  authDomain: "student-portal-61ead.firebaseapp.com",
+  projectId: "student-portal-61ead",
+  storageBucket: "student-portal-61ead.firebasestorage.app",
+  messagingSenderId: "415484265376",
+  appId: "1:415484265376:web:41d53b79ac5059a0a35ac5",
+  measurementId: "G-JHCC3HQ20M"
+};
+
+// --- Initialize Firebase ---
+firebase.initializeApp(firebaseConfig);
+const analytics = firebase.analytics();
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// --- UI Functions ---
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = `toast ${type}`;
+  toast.classList.add('show');
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+function setLoading(button, isLoading) {
+  if (isLoading) {
+    button.disabled = true;
+    button.innerHTML = '<span class="loading"></span>';
+  } else {
+    button.disabled = false;
+    button.innerHTML = button.getAttribute('data-original-text');
+  }
+}
+
+// --- Email Verification Functions ---
+function sendEmailVerification() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  const button = document.getElementById('sendVerificationBtn');
+  button.setAttribute('data-original-text', button.textContent);
+  setLoading(button, true);
+  
+  user.sendEmailVerification()
+    .then(() => {
+      showToast('Verification email sent! Please check your inbox.', 'success');
+    })
+    .catch(err => {
+      console.error('Error sending verification email:', err);
+      showToast('Error sending verification email: ' + err.message, 'error');
+    })
+    .finally(() => {
+      setLoading(button, false);
+    });
+}
+
+function checkEmailVerification() {
+  const user = auth.currentUser;
+  const banner = document.getElementById('emailVerificationBanner');
+  
+  if (user && !user.emailVerified) {
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function reloadUser() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  const button = document.getElementById('reloadUserBtn');
+  button.setAttribute('data-original-text', button.textContent);
+  setLoading(button, true);
+  
+  user.reload()
+    .then(() => {
+      if (user.emailVerified) {
+        showToast('Email verified successfully!', 'success');
+        checkEmailVerification();
+      } else {
+        showToast('Email not verified yet. Please check your inbox.', 'warning');
+      }
+    })
+    .catch(err => {
+      console.error('Error reloading user:', err);
+      showToast('Error checking verification status: ' + err.message, 'error');
+    })
+    .finally(() => {
+      setLoading(button, false);
+    });
+}
+
+// --- Sidebar navigation ---
+const navItems = document.querySelectorAll(".nav-item");
+navItems.forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll("section").forEach(sec => sec.style.display = "none");
+    const tab = item.dataset.tab;
+    document.getElementById(tab).style.display = "block";
+    navItems.forEach(i => i.classList.remove("active"));
+    item.classList.add("active");
+  });
+});
+
+// --- Modal toggle ---
+const authModal = document.getElementById("authModal");
+const openLoginBtn = document.getElementById("openLogin");
+openLoginBtn.addEventListener("click", () => authModal.style.display = "flex");
+authModal.addEventListener("click", e => { 
+  if(e.target === authModal) authModal.style.display = "none"; 
+});
+
+// --- Project Creation Modal ---
+const createProjectModal = document.getElementById("createProjectModal");
+const createProjectBtn = document.getElementById("createProjectBtn");
+const cancelProjectBtn = document.getElementById("cancelProjectBtn");
+const saveProjectBtn = document.getElementById("saveProjectBtn");
+
+createProjectBtn.addEventListener("click", () => {
+  createProjectModal.style.display = "flex";
+});
+
+cancelProjectBtn.addEventListener("click", () => {
+  createProjectModal.style.display = "none";
+});
+
+saveProjectBtn.addEventListener("click", () => {
+  const title = document.getElementById("projectTitle").value;
+  const description = document.getElementById("projectDescription").value;
+  
+  if (!title || !description) {
+    showToast('Please fill in all fields', 'error');
+    return;
+  }
+  
+  const user = auth.currentUser;
+  if (!user) {
+    showToast('Please log in to create projects', 'error');
+    return;
+  }
+  
+  // Check if email is verified
+  if (!user.emailVerified) {
+    showToast('Please verify your email before creating projects', 'warning');
+    return;
+  }
+  
+  saveProjectBtn.setAttribute('data-original-text', saveProjectBtn.textContent);
+  setLoading(saveProjectBtn, true);
+  
+  db.collection("projects").add({
+    title: title,
+    description: description,
+    createdBy: user.uid,
+    creatorEmail: user.email,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    status: "active"
+  })
+  .then(() => {
+    showToast("Project created successfully!");
+    createProjectModal.style.display = "none";
+    document.getElementById("projectTitle").value = "";
+    document.getElementById("projectDescription").value = "";
+  })
+  .catch(err => {
+    showToast(err.message, 'error');
+  })
+  .finally(() => {
+    setLoading(saveProjectBtn, false);
+  });
+});
+
+// --- Group Creation Modal ---
+const createGroupModal = document.getElementById("createGroupModal");
+const createGroupBtn = document.getElementById("createGroupBtn");
+const cancelGroupBtn = document.getElementById("cancelGroupBtn");
+const saveGroupBtn = document.getElementById("saveGroupBtn");
+
+createGroupBtn.addEventListener("click", () => {
+  createGroupModal.style.display = "flex";
+});
+
+cancelGroupBtn.addEventListener("click", () => {
+  createGroupModal.style.display = "none";
+});
+
+saveGroupBtn.addEventListener("click", () => {
+  const name = document.getElementById("groupName").value;
+  const description = document.getElementById("groupDescription").value;
+  const subject = document.getElementById("groupSubject").value;
+  
+  if (!name || !description || !subject) {
+    showToast('Please fill in all fields', 'error');
+    return;
+  }
+  
+  const user = auth.currentUser;
+  if (!user) {
+    showToast('Please log in to create groups', 'error');
+    return;
+  }
+  
+  // Check if email is verified
+  if (!user.emailVerified) {
+    showToast('Please verify your email before creating groups', 'warning');
+    return;
+  }
+  
+  saveGroupBtn.setAttribute('data-original-text', saveGroupBtn.textContent);
+  setLoading(saveGroupBtn, true);
+  
+  db.collection("studyGroups").add({
+    name: name,
+    description: description,
+    subject: subject,
+    createdBy: user.uid,
+    creatorEmail: user.email,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    members: [user.uid],
+    memberCount: 1
+  })
+  .then(() => {
+    showToast("Study group created successfully!");
+    createGroupModal.style.display = "none";
+    document.getElementById("groupName").value = "";
+    document.getElementById("groupDescription").value = "";
+    document.getElementById("groupSubject").value = "";
+  })
+  .catch(err => {
+    showToast(err.message, 'error');
+  })
+  .finally(() => {
+    setLoading(saveGroupBtn, false);
+  });
+});
+
+// --- Chat System ---
+const sendBtn = document.getElementById("sendBtn");
+const chatInput = document.getElementById("chatInput");
+const chatWindow = document.getElementById("chatWindow");
+
+sendBtn.addEventListener("click", sendMessage);
+chatInput.addEventListener("keypress", (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
+
+function sendMessage() {
+  const message = chatInput.value.trim();
+  if (!message) return;
+  
+  const user = auth.currentUser;
+  if (!user) {
+    showToast('Please log in to send messages', 'error');
+    return;
+  }
+  
+  // Check if email is verified
+  if (!user.emailVerified) {
+    showToast('Please verify your email before sending messages', 'warning');
+    return;
+  }
+  
+  db.collection("messages").add({
+    text: message,
+    sender: user.uid,
+    senderEmail: user.email,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    chatInput.value = "";
+  })
+  .catch(err => {
+    showToast(err.message, 'error');
+  });
+}
+
+// Load messages in real-time
+db.collection("messages")
+  .orderBy("timestamp", "asc")
+  .onSnapshot(snapshot => {
+    chatWindow.innerHTML = "";
+    
+    snapshot.forEach(doc => {
+      const message = doc.data();
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "message";
+      
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "meta";
+      metaDiv.textContent = `${message.senderEmail} - ${message.timestamp ? new Date(message.timestamp.toDate()).toLocaleString() : 'Just now'}`;
+      
+      const textDiv = document.createElement("div");
+      textDiv.textContent = message.text;
+      
+      messageDiv.appendChild(metaDiv);
+      messageDiv.appendChild(textDiv);
+      chatWindow.appendChild(messageDiv);
+    });
+    
+    // Scroll to bottom
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  });
+
+// --- Profile System ---
+const saveProfileBtn = document.getElementById("saveProfileBtn");
+const profilePicInput = document.getElementById("profilePicInput");
+const profilePic = document.getElementById("profilePic");
+const profileName = document.getElementById("profileName");
+const profileBio = document.getElementById("profileBio");
+
+saveProfileBtn.addEventListener("click", saveProfile);
+profilePicInput.addEventListener("change", handleProfilePicUpload);
+
+function handleProfilePicUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const user = auth.currentUser;
+  if (!user) {
+    showToast('Please log in to update profile', 'error');
+    return;
+  }
+  
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    profilePic.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveProfile() {
+  const user = auth.currentUser;
+  if (!user) {
+    showToast('Please log in to save profile', 'error');
+    return;
+  }
+  
+  const name = profileName.value;
+  const bio = profileBio.value;
+  const file = profilePicInput.files[0];
+  
+  saveProfileBtn.setAttribute('data-original-text', saveProfileBtn.textContent);
+  setLoading(saveProfileBtn, true);
+  
+  let uploadPromise = Promise.resolve(null);
+  
+  // Upload image if selected
+  if (file) {
+    const storageRef = storage.ref();
+    const profilePicRef = storageRef.child(`profilePics/${user.uid}`);
+    uploadPromise = profilePicRef.put(file).then(snapshot => snapshot.ref.getDownloadURL());
+  }
+  
+  uploadPromise
+    .then(photoURL => {
+      const profileData = {
+        name: name,
+        bio: bio,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      
+      if (photoURL) {
+        profileData.photoURL = photoURL;
+      }
+      
+      return db.collection("profiles").doc(user.uid).set(profileData, { merge: true });
+    })
+    .then(() => {
+      showToast("Profile saved successfully!");
+      loadProfile();
+    })
+    .catch(err => {
+      showToast(err.message, 'error');
+    })
+    .finally(() => {
+      setLoading(saveProfileBtn, false);
+    });
+}
+
+function loadProfile() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  db.collection("profiles").doc(user.uid).get()
+    .then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        profileName.value = data.name || "";
+        profileBio.value = data.bio || "";
+        if (data.photoURL) {
+          profilePic.src = data.photoURL;
+        }
+      }
+    })
+    .catch(err => {
+      console.error("Error loading profile:", err);
+    });
+}
+
+// --- Auth buttons ---
+document.getElementById("modalRegister").addEventListener("click", () => {
+  const email = document.getElementById("modalEmail").value;
+  const pass = document.getElementById("modalPass").value;
+  const button = document.getElementById("modalRegister");
+  
+  if (!email || !pass) {
+    showToast('Please enter both email and password', 'error');
+    return;
+  }
+  
+  // Store original text and set loading state
+  button.setAttribute('data-original-text', button.textContent);
+  setLoading(button, true);
+  
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(u => { 
+      // Send verification email after registration
+      if (u.user) {
+        u.user.sendEmailVerification()
+          .then(() => {
+            showToast("Registered successfully! Please check your email for verification.", 'success');
+          })
+          .catch(err => {
+            console.error('Error sending verification email:', err);
+            showToast("Registered successfully but couldn't send verification email.", 'warning');
+          });
+      }
+      authModal.style.display="none"; 
+    })
+    .catch(err => {
+      showToast(err.message, 'error');
+    })
+    .finally(() => {
+      setLoading(button, false);
+    });
+});
+
+document.getElementById("modalLogin").addEventListener("click", () => {
+  const email = document.getElementById("modalEmail").value;
+  const pass = document.getElementById("modalPass").value;
+  const button = document.getElementById("modalLogin");
+  
+  if (!email || !pass) {
+    showToast('Please enter both email and password', 'error');
+    return;
+  }
+  
+  // Store original text and set loading state
+  button.setAttribute('data-original-text', button.textContent);
+  setLoading(button, true);
+  
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(u => { 
+      showToast("Logged in successfully!");
+      authModal.style.display="none"; 
+    })
+    .catch(err => {
+      showToast(err.message, 'error');
+    })
+    .finally(() => {
+      setLoading(button, false);
+    });
+});
+
+document.getElementById("sidebarLogout").addEventListener("click", () => {
+  auth.signOut().then(() => showToast("Logged out successfully!"));
+});
+
+// --- Email verification button handlers ---
+document.getElementById("sendVerificationBtn").addEventListener("click", sendEmailVerification);
+document.getElementById("reloadUserBtn").addEventListener("click", reloadUser);
+
+// --- Auth state listener ---
+auth.onAuthStateChanged(user => {
+  const sideName = document.getElementById("sideName");
+  const sideRole = document.getElementById("sideRole");
+  const welcomeText = document.getElementById("welcomeText");
+  const welcomeSub = document.getElementById("welcomeSub");
+  const loginBtn = document.getElementById("openLogin");
+  const logoutBtn = document.getElementById("sidebarLogout");
+  const adminNav = document.getElementById("adminNav");
+
+  if(user){
+    // Check if user is admin
+    const isAdmin = user.email === "admin@portal.com";
+    
+    sideName.textContent = user.email;
+    sideRole.textContent = isAdmin ? "Administrator" : "Student";
+    welcomeText.textContent = `Welcome, ${user.email}`;
+    welcomeSub.textContent = isAdmin ? "Administrator Dashboard" : "Ready to learn!";
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "block";
+    
+    // Show/hide admin panel based on role
+    if (isAdmin) {
+      adminNav.style.display = "flex";
+    } else {
+      adminNav.style.display = "none";
+    }
+    
+    // Check email verification status
+    checkEmailVerification();
+    
+    // Load user profile
+    loadProfile();
+  } else {
+    sideName.textContent = "Guest";
+    sideRole.textContent = "Not signed in";
+    welcomeText.textContent = "Welcome";
+    welcomeSub.textContent = "Please sign in";
+    loginBtn.style.display = "block";
+    logoutBtn.style.display = "none";
+    adminNav.style.display = "none";
+    
+    // Hide verification banner when logged out
+    document.getElementById('emailVerificationBanner').style.display = 'none';
+  }
+});
+
+// --- Firestore real-time updates ---
+const projectsList = document.getElementById("projectsList");
+db.collection("projects").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+  projectsList.innerHTML = "";
+  
+  if (snapshot.empty) {
+    projectsList.innerHTML = "<div class='list-item'>No projects yet. Create one to get started!</div>";
+    return;
+  }
+  
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const div = document.createElement("div");
+    div.className = "list-item";
+    div.innerHTML = `
+      <div>
+        <strong>${data.title}</strong>
+        <div style="font-size: 14px; color: var(--muted);">${data.description}</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Created by: ${data.creatorEmail}</div>
+      </div>
+      <div style="font-size: 12px; color: var(--muted);">${data.createdAt ? new Date(data.createdAt.toDate()).toLocaleDateString() : 'Recently'}</div>
+    `;
+    projectsList.appendChild(div);
+  });
+});
+
+// Study groups real-time updates
+const clubsList = document.getElementById("clubsList");
+db.collection("studyGroups").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+  clubsList.innerHTML = "";
+  
+  if (snapshot.empty) {
+    clubsList.innerHTML = "<div class='list-item'>No study groups yet. Create one to get started!</div>";
+    return;
+  }
+  
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const div = document.createElement("div");
+    div.className = "list-item";
+    div.innerHTML = `
+      <div>
+        <strong>${data.name}</strong>
+        <div style="font-size: 14px; color: var(--muted);">${data.description}</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+          Subject: ${data.subject} • Members: ${data.memberCount || 1} • Created by: ${data.creatorEmail}
+        </div>
+      </div>
+      <button class="btn" style="font-size: 12px; padding: 6px 12px;" onclick="joinGroup('${doc.id}')">Join</button>
+    `;
+    clubsList.appendChild(div);
+  });
+});
+
+// Join group function
+function joinGroup(groupId) {
+  const user = auth.currentUser;
+  if (!user) {
+    showToast('Please log in to join groups', 'error');
+    return;
+  }
+  
+  // Check if email is verified
+  if (!user.emailVerified) {
+    showToast('Please verify your email before joining groups', 'warning');
+    return;
+  }
+  
+  const groupRef = db.collection("studyGroups").doc(groupId);
+  
+  groupRef.get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      const members = data.members || [];
+      
+      if (members.includes(user.uid)) {
+        showToast('You are already a member of this group', 'error');
+        return;
+      }
+      
+      members.push(user.uid);
+      
+      groupRef.update({
+        members: members,
+        memberCount: members.length
+      })
+      .then(() => {
+        showToast('Successfully joined the group!');
+      })
+      .catch(err => {
+        showToast(err.message, 'error');
+      });
+    }
+  });
+}
+
+// --- Placeholder for other sections (assignments, events, etc.) ---
+const placeholders = ["assignmentsList","eventsList","reportsList"];
+placeholders.forEach(id => {
+  const container = document.getElementById(id);
+  if(container) container.innerHTML = "<div class='list-item'>No data yet</div>";
+});
+
+// --- Admin Panel Functions ---
+document.getElementById("manageUsersBtn").addEventListener("click", () => {
+  const adminContent = document.getElementById("adminContent");
+  adminContent.innerHTML = `
+    <h4>User Management</h4>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Last Login</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>admin@portal.com</td>
+          <td>Administrator</td>
+          <td>Today</td>
+          <td><button class="btn danger" style="padding: 4px 8px; font-size: 12px;">Delete</button></td>
+        </tr>
+        <tr>
+          <td>student@portal.com</td>
+          <td>Student</td>
+          <td>Today</td>
+          <td><button class="btn danger" style="padding: 4px 8px; font-size: 12px;">Delete</button></td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+});
+
+document.getElementById("systemStatsBtn").addEventListener("click", () => {
+  const adminContent = document.getElementById("adminContent");
+  adminContent.innerHTML = `
+    <h4>System Statistics</h4>
+    <div class="grid">
+      <div class="card">
+        <h4>Total Users</h4>
+        <p style="font-size: 24px; font-weight: bold; margin: 0;">2</p>
+      </div>
+      <div class="card">
+        <h4>Active Projects</h4>
+        <p style="font-size: 24px; font-weight: bold; margin: 0;">3</p>
+      </div>
+      <div class="card">
+        <h4>Study Groups</h4>
+        <p style="font-size: 24px; font-weight: bold; margin: 0;">2</p>
+      </div>
+      <div class="card">
+        <h4>Messages Today</h4>
+        <p style="font-size: 24px; font-weight: bold; margin: 0;">5</p>
+      </div>
+    </div>
+  `;
+});
+
+// Create demo accounts on page load
+window.addEventListener('load', () => {
+  // Pre-fill demo accounts for easier testing
+  document.getElementById('modalEmail').value = 'student@portal.com';
+  document.getElementById('modalPass').value = 'student123';
+});
+</script>
+</body>
+</html>
